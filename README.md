@@ -7,7 +7,7 @@
 Here's how to get started with the Icosicon Game of Life Engine
 
 ###Download
-Download an installer for the [latest version](https://github.com/Icosicon/GameOfLife/releases/latest) of RCSim;
+Download an installer for the [latest version](https://github.com/Icosicon/GameOfLife/releases/latest) of GoLE;
 Choose ~~either an executable installer or~~ (installers incomplete) a zipped folder (either x86 or x64 [depending on your system](http://support.wdc.com/knowledgebase/answer.aspx?ID=9405))
 
 ###Installing Using Zipped Folder
