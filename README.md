@@ -1,4 +1,4 @@
-# GameOfLife
+# Game Of Life
 - Minimalistic Game of Life Engine **FOR WINDOWS ONLY**
 - Developed by Tom Wright at Icosicon
 
