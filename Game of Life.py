@@ -839,7 +839,7 @@ class simulatewindow(tkinter.Frame):
         self.controller.config(background='#D4D4D4',image=[self.images[4],self.images[5]][self.simulating])
         self.controlleractive=False
         if self.simulating:
-            self.animate()            
+            threading.Thread(target=self.animate).start()          
     def savehighlight(self,*args):
         if self.saveactive==False:
             self.save.config(background="#D4D4D4")
@@ -869,11 +869,9 @@ class simulatewindow(tkinter.Frame):
         sounds=['Interface/AUDIO/popoff.wav','Interface/AUDIO/pop.wav']
         winsound.PlaySound(sounds[random.randint(0,1)],winsound.SND_ASYNC)
     def animate(self):
-        self.activecells=self.calcnextframe(self.activecells)
-        if self.simulating:
-            self.master.after(1,self.animate)
-        else:
-            return None
+        while self.simulating:
+            self.activecells=self.calcnextframe(self.activecells)
+            self.master.update()
     def calcnextframe(self,activecells):
         newactivecells,checkedcells=[],activecells[:]
         for cell in activecells:
