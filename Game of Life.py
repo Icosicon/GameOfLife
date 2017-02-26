@@ -708,7 +708,7 @@ class simulatewindow(tkinter.Frame):
         self.x=(self.ws/2)-(self.w/2)
         self.y=(self.hs/2)-(self.h/2)
         self.master.geometry('%dx%d+%d+%d' % (self.w,self.h,self.x,self.y))
-        self.images=[tkinter.PhotoImage(file="Interface/GIF/Unactive/Drag.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Drag.gif"),tkinter.PhotoImage(file="Interface/GIF/Unactive/Cancel.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Cancel.gif"),tkinter.PhotoImage(file="Interface/GIF/Unactive/Sim Start.gif"),tkinter.PhotoImage(file="Interface/GIF/UNACTIVE/Sim Pause.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Sim Start.gif"),tkinter.PhotoImage(file="Interface/GIF/ACTIVE/Sim Pause.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Save.gif"),tkinter.PhotoImage(file="Interface/GIF/UNACTIVE/Save.gif"),tkinter.PhotoImage(file="Interface/GIF/ACTIVE/AcceptNew.gif")]
+        self.images=[tkinter.PhotoImage(file="Interface/GIF/Unactive/Drag.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Drag.gif"),tkinter.PhotoImage(file="Interface/GIF/Unactive/Cancel.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Cancel.gif"),tkinter.PhotoImage(file="Interface/GIF/Unactive/Sim Start.gif"),tkinter.PhotoImage(file="Interface/GIF/UNACTIVE/Sim Pause.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Sim Start.gif"),tkinter.PhotoImage(file="Interface/GIF/ACTIVE/Sim Pause.gif"),tkinter.PhotoImage(file="Interface/GIF/Active/Save.gif"),tkinter.PhotoImage(file="Interface/GIF/UNACTIVE/Save.gif"),tkinter.PhotoImage(file="Interface/GIF/ACTIVE/AcceptNew.gif"),tkinter.PhotoImage(file="Interface/GIF/DragLock.gif")]
         self.drag = tkinter.Label(self.master,image=self.images[0],background="#FFFFFF",bd=0,highlightthickness=0)
         self.drag.place(x=275,y=0)
         self.dragactive = False
@@ -717,7 +717,10 @@ class simulatewindow(tkinter.Frame):
         self.drag.bind("<B1-Motion>", self.OnMotion)
         self.drag.bind("<Enter>",self.draghighlight)
         self.drag.bind("<Leave>",self.dragunhighlight)
-
+        self.drag.bind("<Leave>",self.dragunhighlight)
+        self.drag.bind("<ButtonPress-3>", self.dragLockToggle)
+        self. dragLocked=False
+        
         self.close = tkinter.Label(self.master,image=self.images[2],background="#FFFFFF",bd=0,highlightthickness=0)
         self.close.place(x=275,y=75)
         self.closeactive = False
@@ -777,28 +780,39 @@ class simulatewindow(tkinter.Frame):
                 if messagebox.askyesno("Error",message="ERROR SAVING UNIVERSE:\n{}\nSave again?".format(detectedError)):
                     self.saveUniverseFile()
     def draghighlight(self,*args):
-        if self.dragactive==False:
+        if self.dragactive==False and not self.dragLocked:
             self.drag.config(background="#D4D4D4")
     def dragunhighlight(self,*args):
-        if self.dragactive==False:
+        if self.dragactive==False and not self.dragLocked:
             self.drag.config(background="#FFFFFF")
+    def dragLockToggle(self,*args):
+        threading.Thread(target=self.popon).start()
+        if not self.simulating:
+            self.dragLocked = not self.dragLocked
+            if self.dragLocked:
+                self.drag.config(background='#1D60A7',image=self.images[11])
+            else:
+                self.drag.config(background='#D4D4D4',image=self.images[0])
     def StartMove(self, event):
         threading.Thread(target=self.popon).start()
-        self.drag.config(background='#1D60A7',image=self.images[1])
-        self.dragactive = True
-        self.x1 = event.x
-        self.y1 = event.y
+        if not self.dragLocked:
+            self.drag.config(background='#1D60A7',image=self.images[1])
+            self.dragactive = True
+            self.x1 = event.x
+            self.y1 = event.y
     def StopMove(self, event):
-        self.drag.config(background='#D4D4D4',image=self.images[0])
-        self.dragactive = False
-        self.x1 = None
+        if not self.dragLocked:
+            self.drag.config(background='#D4D4D4',image=self.images[0])
+            self.dragactive = False
+            self.x1 = None
         self.y1 = None
     def OnMotion(self, event):
-        deltax = event.x - self.x1
-        deltay = event.y - self.y1
-        x = self.master.winfo_x() + deltax
-        y = self.master.winfo_y() + deltay
-        self.master.geometry('%dx%d+%d+%d' % (self.w,self.h,x,y))
+        if not self.dragLocked:
+            deltax = event.x - self.x1
+            deltay = event.y - self.y1
+            x = self.master.winfo_x() + deltax
+            y = self.master.winfo_y() + deltay
+            self.master.geometry('%dx%d+%d+%d' % (self.w,self.h,x,y))
     def cancel(self,*args):
         self.master.destroy()
     def closehighlight(self,*args):
@@ -839,7 +853,10 @@ class simulatewindow(tkinter.Frame):
         self.controller.config(background='#D4D4D4',image=[self.images[4],self.images[5]][self.simulating])
         self.controlleractive=False
         if self.simulating:
-            threading.Thread(target=self.animate).start()          
+            if self.dragLocked:
+                self.speedanimate()
+            else:
+                threading.Thread(target=self.animate).start()          
     def savehighlight(self,*args):
         if self.saveactive==False:
             self.save.config(background="#D4D4D4")
@@ -872,6 +889,12 @@ class simulatewindow(tkinter.Frame):
         while self.simulating:
             self.activecells=self.calcnextframe(self.activecells)
             self.master.update()
+    def speedanimate(self):
+        self.activecells=self.calcnextframe(self.activecells)
+        if self.simulating:
+            self.master.after(1,self.animate)
+        else:
+            return None
     def calcnextframe(self,activecells):
         newactivecells,checkedcells=[],activecells[:]
         for cell in activecells:
