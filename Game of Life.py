@@ -783,6 +783,7 @@ class simulatewindow(tkinter.Frame):
         if self.dragactive==False:
             self.drag.config(background="#FFFFFF")
     def StartMove(self, event):
+        self.simulating = False
         threading.Thread(target=self.popon).start()
         self.drag.config(background='#1D60A7',image=self.images[1])
         self.dragactive = True
